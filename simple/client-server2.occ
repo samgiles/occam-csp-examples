@@ -1,0 +1,45 @@
+-- An example of the client server paradigm (avoids deadlocks by ensuring
+-- sequential ordering of read/write write/read operations in communicating
+-- processes
+
+-- Creates n client processes and server processes n client requests
+
+#INCLUDE "course.module"
+
+PROC client(VAL INT val, SHARED CHAN INT c!, d?, SHARED CHAN BYTE scr!)
+  INITIAL INT token IS 0:
+  SEQ
+    CLAIM c!
+      SEQ
+        c ! val
+        CLAIM d?
+          d ? token
+
+
+    CLAIM scr!
+      SEQ
+        out.int (token, 0, scr!)
+        out.string ("*n", 0, scr!)
+:
+
+PROC server(VAL INT count, SHARED CHAN INT c?, d!)
+  INITIAL INT token IS 1:
+  INITIAL INT i IS count:
+  WHILE i > 0
+    SEQ
+      CLAIM c?
+        c ? token
+      CLAIM d!
+        d ! token * 2
+      i := i - 1
+:
+
+PROC main (SHARED CHAN BYTE in?, scr!, err!)
+  SHARED CHAN INT c:
+  SHARED CHAN INT d:
+  INITIAL INT count IS 30:
+  PAR
+    server(count, c?, d!)
+    PAR i = 0 FOR count
+      client(i, c!, d?, scr!)
+:
