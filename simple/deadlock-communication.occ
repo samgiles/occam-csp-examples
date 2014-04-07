@@ -1,0 +1,30 @@
+-- Example of deadlocking channel communication
+-- because process 'a' commits to sending on channel 'c'
+-- and process 'b' commits to sending on channel 'd', both processes block
+
+#INCLUDE "course.module"
+
+PROC a(CHAN INT c!, d?)
+  INITIAL INT val IS 0:
+  SEQ
+    c ! 42
+    d ? val
+:
+
+PROC b(CHAN INT c?, d!, CHAN BYTE scr!)
+  INITIAL INT val IS 0:
+  SEQ
+    d ! 666
+    c ? val
+    out.string ("PROC b: ", 0, scr!)
+    out.int (val, 0, scr!)
+    out.string ("*n", 0, scr!)
+:
+
+PROC main (CHAN BYTE in?, scr!, err!)
+  CHAN INT c:
+  CHAN INT d:
+  PAR
+    a(c, d)
+    b(c, d, scr!)
+:
