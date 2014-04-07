@@ -1,0 +1,29 @@
+-- An example of the client server paradigm (avoids deadlocks by ensuring
+-- sequential ordering of read/write write/read operations in communicating
+-- processes
+
+#INCLUDE "course.module"
+
+PROC client(CHAN INT c!, d?, CHAN BYTE scr!)
+  INITIAL INT token IS 0:
+  SEQ
+    c ! 21
+    d ? token
+    out.int (token, 0, scr!)
+    out.string ("*n", 0, scr!)
+:
+
+PROC server(CHAN INT c?, d!)
+  INITIAL INT token IS 0:
+  SEQ
+    c ? token
+    d ! token * 2
+:
+
+PROC main (CHAN BYTE in?, scr!, err!)
+  CHAN INT c:
+  CHAN INT d:
+  PAR
+    client(c!, d?, scr!)
+    server(c?, d!)
+:
