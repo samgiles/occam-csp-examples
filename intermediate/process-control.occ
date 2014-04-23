@@ -1,0 +1,60 @@
+#INCLUDE "course.module"
+
+PROTOCOL CONTROL
+  CASE
+    poison
+:
+
+PROTOCOL TAGGED.INT
+  CASE
+    normal; INT
+    poison
+:
+
+PROC producer (VAL INT start, step, CHAN OF TAGGED.INT c!, CHAN OF CONTROL control?)
+  INT count:
+  INITIAL BOOL running IS TRUE:
+  SEQ
+    count := start
+    WHILE running
+      SEQ
+        PRI ALT
+          control ? poison
+            SEQ
+              running := FALSE
+              c ! poison
+          SKIP
+            SEQ
+              c ! normal; count
+              count := count + step
+:
+
+PROC blackhole (CHAN OF TAGGED.INT c?)
+  INITIAL BOOL flag IS TRUE:
+  INT any:
+  WHILE flag
+    c ? CASE
+      normal; any
+        SKIP
+      poison
+        flag := FALSE
+:
+
+PROC main (CHAN BYTE kyb?, scr!, err!)
+  CHAN OF TAGGED.INT c:
+  CHAN OF CONTROL control:
+  INITIAL INT n IS 0:
+  INT val:
+  PAR
+    producer(0, 4, c!, control?)
+    SEQ
+      WHILE n < 10
+        SEQ
+          c ? normal; val
+          out.int (val, 0, scr!)
+          out.string ("*n", 0, scr!)
+          n := n + 1
+      PAR
+        control ! poison
+        blackhole(c?)
+:
